@@ -1,0 +1,11 @@
+{
+ "name":"HR英语新闻阅读打卡",
+ "short_name":"HR阅读",
+ "description":"每天一篇HR新闻·长难句·词汇·跟读评分",
+ "start_url":"./",
+ "scope":"./",
+ "display":"standalone",
+ "background_color":"#eef2f8",
+ "theme_color":"#2f6bff",
+ "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
