@@ -1,7 +1,7 @@
 {
  "name":"日拱一卒",
- "short_name":"HR阅读",
- "description":"每天一篇HR新闻·长难句·词汇·跟读评分",
+ "short_name":"日拱一卒",
+ "description":"每天一篇新闻·长难句·词汇·跟读评分",
  "start_url":"./",
  "scope":"./",
  "display":"standalone",
