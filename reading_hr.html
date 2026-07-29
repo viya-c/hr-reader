@@ -179,6 +179,7 @@ body.all-zh .zh{display:block}
 
 /* 打卡日历 */
 .cal-card{background:linear-gradient(180deg,#fff,#f7f9ff);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;margin:18px 0 4px;box-shadow:0 4px 18px rgba(31,42,61,.06)}
+.cal-title{font-size:14px;font-weight:800;color:var(--ink);text-align:center;margin-bottom:10px}
 .cal-head{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px}
 .cal-head b{font-size:15px;color:var(--ink)}
 .cal-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
@@ -284,7 +285,8 @@ function renderCalendar(){
  var byDate={}; for(var k in state.done){var d=state.done[k]; if(!d) continue; (byDate[d]=byDate[d]||[]).push(k);}
  if(!calY||!calM){var max=""; for(var k in state.done){var d=state.done[k]; if(d&&d>max)max=d;} var base=max?new Date(max):new Date(); calY=base.getFullYear(); calM=base.getMonth()+1;}
  var y=calY,m=calM; var first=new Date(y,m-1,1), startW=first.getDay(); var days=new Date(y,m,0).getDate();
- var h='<div class="cal-head"><button class="btn ghost sm" onclick="calMove(-1)">‹</button><b>'+y+'年'+m+'月</b><button class="btn ghost sm" onclick="calMove(1)">›</button></div>';
+ var h='<div class="cal-title">📅 打卡日历</div>';
+ h+='<div class="cal-head"><button class="btn ghost sm" onclick="calMove(-1)">‹</button><b>'+y+'年'+m+'月</b><button class="btn ghost sm" onclick="calMove(1)">›</button></div>';
  h+='<div class="cal-wk">'+["日","一","二","三","四","五","六"].map(function(w){return "<span>"+w+"</span>";}).join("")+'</div>';
  h+='<div class="cal-grid">'; for(var i=0;i<startW;i++) h+='<span class="cal-day empty"></span>';
  var todayStr=fmtDate(new Date());
