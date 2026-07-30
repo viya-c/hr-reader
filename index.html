@@ -205,9 +205,14 @@ body.all-zh .zh{display:block}
 .cal-day-list li{padding:9px 10px;border-radius:9px;background:#f6f8fd;margin-bottom:6px;font-size:13px;color:var(--ink);cursor:pointer;border:1px solid #eef1f7}
 .cal-day-list li:hover{background:#eaf0ff}
 .cal-day-close{margin-top:8px;text-align:center;font-size:12px;color:var(--muted);cursor:pointer}
+/* 持久化环境提示横幅 */
+.dep-warn{position:sticky;top:0;z-index:80;display:flex;align-items:center;gap:8px;background:#fff4e0;color:#8a5a00;border-bottom:1px solid #ffd9a0;padding:9px 12px;font-size:13px;line-height:1.5;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.dep-warn .dep-msg{flex:1}
+.dep-warn .dep-x{flex:0 0 auto;border:none;background:#ffe2b0;color:#8a5a00;border-radius:8px;font-size:13px;font-weight:800;padding:3px 9px;cursor:pointer}
 </style>
 </head>
 <body>
+<div id="depWarn" class="dep-warn" style="display:none"><span class="dep-msg"></span><button class="dep-x" onclick="document.getElementById('depWarn').style.display='none'">✕</button></div>
 <div class="wrap" id="app"></div>
 <div class="modal" id="modal"><div class="sheet"><h3>选择第几篇</h3>
  <div class="hint">绿色=已打卡 · 蓝框=当前篇</div><div class="grid" id="grid"></div>
@@ -246,6 +251,14 @@ let notes={}, coll=[], state={done:{}}, ai=0;
 try{notes=JSON.parse(localStorage.getItem(K_NOTE)||"{}");}catch(e){}
 try{coll=JSON.parse(localStorage.getItem(K_COLL)||"[]");}catch(e){}
 try{state.done=JSON.parse(localStorage.getItem(K_PROG)||"{}");}catch(e){}
+/* 持久化环境自检：分享链接 / 隐私模式 / 部分 webview 会禁用 localStorage，导致打卡记录丢失 */
+function showDepWarn(msg){const w=document.getElementById("depWarn");if(!w)return;w.querySelector(".dep-msg").textContent=msg;w.style.display="flex";}
+(function(){
+ var canPersist=true;
+ try{var k="__hr_probe__";localStorage.setItem(k,"1");canPersist=(localStorage.getItem(k)==="1");localStorage.removeItem(k);}catch(e){canPersist=false;}
+ if(!canPersist){showDepWarn("⚠️ 当前打开方式无法保存阅读记录（常见于通过“分享链接”或隐私模式打开）。请改用 GitHub Pages 安装的 PWA 版本，记录才会保留。");}
+ else if(location.hostname.indexOf("github.io")<0 && location.protocol!=="file:"){showDepWarn("💡 你正通过非 GitHub Pages 地址打开，记录可能不稳定。建议用 viya-c.github.io/hr-reader 安装的 PWA：记录持久、自动更新、无分享外壳。");}
+})();
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const app=$("#app"), modal=$("#modal");
 
