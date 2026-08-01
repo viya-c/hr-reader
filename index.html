@@ -196,7 +196,7 @@ body.all-zh .zh{display:block}
 .cal-wk span{text-align:center;font-size:11px;color:var(--muted);font-weight:700}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 .cal-day{position:relative;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink);border-radius:6px;background:#fff;border:1px solid #eef1f7}
-.cal-day.empty{background:transparent;border:none}
+.cal-day.empty{background:transparent;border:none;padding:0}
 .cal-day.on{background:linear-gradient(180deg,#eafaf1,#d7f5e3);border-color:#bfe9cd;color:#0f7a45;font-weight:800;cursor:pointer}
 .cal-day.today{box-shadow:0 0 0 2px #4f86f7 inset}
 .cal-day i{position:absolute;top:1px;right:2px;font-style:normal;font-size:8px;line-height:1;background:#0f9d58;color:#fff;border-radius:7px;padding:1px 3px;font-weight:700}
@@ -417,7 +417,6 @@ function renderArticle(){
    <div class="tools">
      <button class="btn primary" id="btnTrans">🌐 全文中文：关</button>
      <button class="btn" id="btnRead" onclick="readAll()">🔊 朗读全文</button>
-     <button class="btn" onclick="openWords()">⭐ 我的词库 (<span id="collCount">0</span>)</button>
      <button class="btn alt" onclick="scrollToQuiz()">🧠 去做题</button>
      <button class="btn" onclick="scrollToVocab()">📚 词汇表</button>
      <button class="btn alt" onclick="openScore()">🎯 跟读评分</button>
@@ -430,7 +429,7 @@ function renderArticle(){
    </div>
   </div>`;
  bindWords();
- $("#collCount").textContent=coll.length;
+ var cc0=$("#collCount");if(cc0)cc0.textContent=coll.length;
  $("#btnTrans").onclick=function(){document.body.classList.toggle("all-zh");this.textContent="🌐 全文中文："+(document.body.classList.contains("all-zh")?"开":"关");};
 }
 
@@ -651,10 +650,10 @@ function saveNote(w){notes[w]=$("#note-"+w).value;localStorage.setItem(K_NOTE,JS
 function scrollVocab(word){const row=$("#voc-"+word);if(row){row.scrollIntoView({behavior:"smooth",block:"center"});row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),1200);}}
 function toggleColl(w){const i=coll.indexOf(w);if(i>=0)coll.splice(i,1);else coll.push(w);
  localStorage.setItem(K_COLL,JSON.stringify(coll));$("#star-"+w).classList.toggle("on");
- $("#collCount").textContent=coll.length;toast(coll.includes(w)?"⭐ 已收藏":"已取消收藏");}
+ var cc1=$("#collCount");if(cc1)cc1.textContent=coll.length;toast(coll.includes(w)?"⭐ 已收藏":"已取消收藏");}
 /* 浮窗内收藏（词汇表外不存在 #star-<w>，需做空值保护） */
 function toggleCollPopup(w,btn){const i=coll.indexOf(w);if(i>=0)coll.splice(i,1);else coll.push(w);
- localStorage.setItem(K_COLL,JSON.stringify(coll));$("#collCount").textContent=coll.length;
+ localStorage.setItem(K_COLL,JSON.stringify(coll));var cc2=$("#collCount");if(cc2)cc2.textContent=coll.length;
  const st=$("#star-"+w);if(st)st.classList.toggle("on",coll.includes(w));
  const on=coll.includes(w);if(btn){btn.classList.toggle("on",on);btn.textContent=on?"✅ 已收藏到生词本":"⭐ 收藏到生词本";}
  toast(on?"⭐ 已收藏到生词本":"已取消收藏");}
