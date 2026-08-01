@@ -15,6 +15,7 @@ html,body{margin:0;padding:0}
 body{font-family:"PingFang SC","Microsoft YaHei",system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
 .wrap{max-width:820px;margin:0 auto;padding:10px 12px 90px}
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+@media print{.tools,.nav,.cv-actions,.topbar,.cal-card,.stats{display:none!important}.wrap{padding:0 0 0}#app{padding:0}}
 .topbar .logo{font-weight:800;font-size:16px;color:var(--brand)}
 .topbar .spacer{flex:1}
 .btn{cursor:pointer;border:none;border-radius:11px;padding:9px 13px;font-size:13px;font-weight:700;
@@ -210,8 +211,16 @@ body.all-zh .zh{display:block}
 .cal-day.sel{outline:2px solid var(--brand);outline-offset:-2px;z-index:5}
 /* 封面词库 */
 .cw-cover{margin:10px 0 2px}
-.cw-cover .cw-h{font-size:13px;font-weight:800;color:var(--ink);margin:4px 0 7px;display:flex;align-items:center;gap:6px}
+.cw-wrap{margin:10px 0 2px}
+.cw-toggle{display:flex;align-items:center;gap:8px;width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+.cw-toggle .cw-caret{margin-left:auto;transition:transform .2s}
+.cw-toggle.open .cw-caret{transform:rotate(180deg)}
 .cw-cover .cw-list{display:flex;flex-wrap:wrap;gap:6px}
+.cw-cover .empty{color:var(--muted);font-size:13px;padding:6px 0}
+.vex{vertical-align:top}
+.vex-s{font-size:12px;color:var(--ink);line-height:1.55;padding:5px 0;border-top:1px dashed #e3e8f0;white-space:pre-line}
+.vex-s.muted{color:var(--muted)}
+.zh-gloss{color:var(--ink);font-weight:500}
 .cw-cover .wchip{display:inline-flex;align-items:center;gap:4px;background:#eef3ff;border:1px solid #d7e3ff;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;color:var(--brand);cursor:pointer}
 .cw-cover .wchip .wbadge{background:var(--brand);color:#fff;border-radius:999px;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;padding:0 4px}
 .cw-cover .empty{color:var(--muted);font-size:13px;padding:6px 0}
@@ -224,6 +233,7 @@ body.all-zh .zh{display:block}
 <body>
 <div id="depWarn" class="dep-warn" style="display:none"><span class="dep-msg"></span><button class="dep-x" onclick="document.getElementById('depWarn').style.display='none'">✕</button></div>
 <div class="wrap" id="app"></div>
+<div id="verBar" class="ver-bar"></div>
 <div class="modal" id="modal"><div class="sheet"><h3>选择第几篇</h3>
  <div class="hint">绿色=已打卡 · 蓝框=当前篇</div><div class="grid" id="grid"></div>
  <div style="text-align:right;padding:0 18px 18px"><button class="btn ghost" onclick="closeGrid()">关闭</button></div></div></div>
@@ -362,7 +372,10 @@ function cover(){
      <button class="btn ghost sm" onclick="backupData()">📦 备份</button>
      <button class="btn ghost sm" onclick="document.getElementById('restoreFile').click()">📂 恢复</button>
    </div>
-   <div id="coverWords" class="cw-cover"></div>
+   <div class="cw-wrap">
+    <button class="cw-toggle" onclick="toggleCoverWords()">📚 我的词库 · <span id="cwCnt">0</span> 词 <span class="cw-caret">▾</span></button>
+    <div id="coverWords" class="cw-cover" style="display:none"></div>
+   </div>
    <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="restoreData(this)">
   </div>`;
  renderCalendar();renderWordsCover();
@@ -378,14 +391,16 @@ function renderArticle(){
  a.analysis.forEach(an=>{anaHtml+=`<details class="ana" id="ana${an[0]}"><summary><span class="n">${an[0]}</span><span>长难句 ${an[0]}</span></summary>
    <button class="locbtn" onclick="locateOrig(${an[0]})">📍 在原文中定位此句</button>
    <div class="cont"><div class="sent">${an[1]}</div><div class="brk">${an[2]}</div><div class="tr">${an[3]}</div></div></details>`;});
- let vocHtml='<div class="sec-title">📚 重点词汇（📝笔记 · ⭐收藏）<button class="vbtn" style="margin-left:auto" onclick="scrollToText()">🔝 返回正文</button></div><table class="vocab-tbl"><thead><tr><th>单词</th><th>词性</th><th>释义 / 原文例句</th><th>操作</th></tr></thead><tbody>';
- a.vocab.forEach(v=>{const wk=v.w.toLowerCase();const noted=notes[wk]?" show":"";const starred=coll.includes(wk)?" on":"";
-  vocHtml+=`<tr class="row" id="voc-${wk}"><td class="wd">${v.w}</td><td>${v.pos}</td>
-   <td>${v.zh}</td>
-   <td><button class="vbtn" onclick="toggleNote('${wk}')">📝笔记</button>
-   <button class="vbtn star${starred}" id="star-${wk}" onclick="toggleColl('${wk}')">⭐</button>
-   <textarea class="note-area${noted}" id="note-${wk}" placeholder="写点笔记…" oninput="saveNote('${wk}')">${notes[wk]||""}</textarea></td></tr>`;});
- vocHtml+="</tbody></table>";
+let vocHtml='<div class="sec-title">📚 重点词汇（📝笔记 · ⭐收藏）<button class="vbtn" style="margin-left:auto" onclick="scrollToText()">🔝 返回正文</button></div><table vocab-tbl"><thead><tr><th>单词</th><th>词性</th><th>释义</th><th>原文例句</th><th>操作</th></tr></thead><tbody>';
+a.vocab.forEach(v=>{const wk=v.w.toLowerCase();const noted=notes[wk]?" show":"";const starred=coll.includes(wk)?" on":"";
+ vocHtml+=`<tr class="row" id="voc-${wk}"><td class="wd" onclick="showVocabOrig('${wk}')">${v.w}</td><td>${v.pos}</td>
+  <td class="zh-gloss">${v.zh}</td>
+  <td class="vex" id="vex-${wk}"></td>
+  <td><button class="vbtn" onclick="toggleNote('${wk}')">📝笔记</button>
+  <button class="vbtn star${starred}" id="star-${wk}" onclick="toggleColl('${wk}')">⭐</button>
+  <button class="vbtn" onclick="locateVocabOrig('${wk}')">🔗 看原文</button>
+  <textarea class="note-area${noted}" id="note-${wk}" placeholder="写点笔记…" oninput="saveNote('${wk}')">${notes[wk]||""}</textarea></td></tr>`;});
+vocHtml+="</tbody></table>";
  let quizHtml='<div class="sec-title" id="quizSec">🧠 阅读理解（3题）</div>';
  a.quiz.forEach((q,qi)=>{
   if(q.type==="choice"){let opts="";q.options.forEach((o,oi)=>{opts+=`<button class="opt" onclick="answer(${qi},${oi},this)">${String.fromCharCode(65+oi)}. ${o}</button>`;});
@@ -419,6 +434,7 @@ function renderArticle(){
      <button class="btn" id="btnRead" onclick="readAll()">🔊 朗读全文</button>
      <button class="btn alt" onclick="scrollToQuiz()">🧠 去做题</button>
      <button class="btn" onclick="scrollToVocab()">📚 词汇表</button>
+     <button class="btn" onclick="window.print()">🖨 打印 / 存PDF</button>
      <button class="btn alt" onclick="openScore()">🎯 跟读评分</button>
    </div>
    <div class="body">${parasHtml}${anaHtml}${vocHtml}${quizHtml}${checkin}</div>
@@ -663,10 +679,13 @@ function toggleDone(){if(state.done[ai])delete state.done[ai];else state.done[ai
  toast(state.done[ai]?"🎉 打卡成功！":"已取消打卡");if(document.getElementById("calWrap"))renderCalendar();}
 function wordFreq(w){var c=0;for(var i=0;i<DATA.length;i++){var v=(DATA[i].vocab)||[];for(var j=0;j<v.length;j++){if((v[j].w||'').toLowerCase()===w){c++;break;}}}return c;}
 function renderWordsCover(){var el=document.getElementById("coverWords");if(!el)return;
- if(!coll.length){el.innerHTML='<div class="cw-h">📚 我的词库</div><div class="empty">还没有收藏词汇，点文章里词汇表的 ⭐ 收藏吧～</div>';return;}
- var h='<div class="cw-h">📚 我的词库 · '+coll.length+' 词</div><div class="cw-list">';
+ if(!coll.length){el.innerHTML='<div class="cw-empty">还没有收藏词汇，点文章里词汇表的 ⭐ 收藏吧～</div>';return;}
+ var h='<div class="cw-list">';
  coll.forEach(function(w){var f=wordFreq(w);h+='<span class="wchip" onclick="openWords()">'+w+(f>1?'<span class="wbadge">'+f+'</span>':'')+'</span>';});
- h+='</div>';el.innerHTML=h;}
+ h+='</div>';el.innerHTML=h;document.getElementById("cwCnt").textContent=coll.length;}
+function toggleCoverWords(){var w=document.getElementById("coverWords"),t=document.querySelector(".cw-toggle");if(t)t.classList.toggle("open");if(w)w.style.display=w.style.display==="none"?"block":"none";}
+function showVocabOrig(wk){var a=DATA[ai];if(!a||!a.paras)return;var ex=[];a.paras.forEach(function(p){if((p.en||'').toLowerCase().split(/\W+/).indexOf(wk)>=0)ex.push(p.en);});var box=document.getElementById('vex-'+wk);if(!box)return;box.innerHTML=ex.length?ex.map(function(s){return '<div class="vex-s">'+s+'</div>';}).join(''):'<div class="vex-s muted">本篇原文未出现该词</div>';}
+function locateVocabOrig(wk){var b=document.querySelector('.body');if(b)b.scrollIntoView({behavior:'smooth',block:'start'});}
 function openWords(){const list=$("#wordsList");list.innerHTML="";
  if(!coll.length){list.innerHTML='<div class="empty">还没有收藏词汇，点词汇表的 ⭐ 收藏吧～</div>';}
  else{coll.forEach(w=>{const d=DICT[w]||{};list.innerHTML+=`<div class="cw"><div class="top">${w} <small>${d.pos||""} ${d.zh||""}</small></div>
