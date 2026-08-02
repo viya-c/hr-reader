@@ -228,12 +228,38 @@ body.all-zh .zh{display:block}
 .dep-warn{position:sticky;top:0;z-index:80;display:flex;align-items:center;gap:8px;background:#fff4e0;color:#8a5a00;border-bottom:1px solid #ffd9a0;padding:9px 12px;font-size:13px;line-height:1.5;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .dep-warn .dep-msg{flex:1}
 .dep-warn .dep-x{flex:0 0 auto;border:none;background:#ffe2b0;color:#8a5a00;border-radius:8px;font-size:13px;font-weight:800;padding:3px 9px;cursor:pointer}
+
+/* 词库独立模块（与封面/正文并行） */
+.wl-modal{position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch}
+.wl-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+.wl-title{font-weight:700;font-size:16px;color:var(--ink)}
+.wl-count{margin-left:auto;color:var(--muted);font-size:13px}
+.wl-body{padding:14px;max-width:760px;margin:0 auto}
+.wl-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.wl-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.wl-word{font-size:17px;font-weight:700;color:var(--brand);cursor:pointer}
+.wl-pos{font-size:12px;color:var(--muted)}
+.wl-zh{font-size:13px;color:var(--muted)}
+.wl-actions{display:flex;gap:8px;margin:8px 0}
+.wl-orig{font-size:13px;line-height:1.6}
+.wl-orig .vex-s{font-size:12.5px}
+.wl-orig .vex-t{display:inline-block;font-size:11px;color:var(--brand);background:#eef3ff;border:1px solid #d7e3ff;border-radius:6px;padding:1px 6px;margin-right:6px;font-weight:600}
+.wl-note{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;background:var(--bg);color:var(--ink);resize:vertical;min-height:54px;font-family:inherit;box-sizing:border-box}
+/* 封面词库入口按钮 */
+.cw-entry{display:flex;align-items:center;gap:8px;width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;margin:10px 0 2px;font-family:inherit}
+.cw-entry:hover{border-color:var(--brand)}
+.cw-entry .cw-caret{margin-left:auto;color:var(--muted);font-size:18px}
+/* 底部版本条 */
+.ver-bar{position:fixed;left:0;right:0;bottom:0;z-index:55;text-align:center;font-size:11.5px;color:var(--muted);background:var(--card);border-top:1px solid var(--line);padding:6px 10px;letter-spacing:.3px;display:none}
+.ver-bar b{color:var(--brand)}
+@media print{.wl-modal,.ver-bar{display:none!important}}
 </style>
 </head>
 <body>
 <div id="depWarn" class="dep-warn" style="display:none"><span class="dep-msg"></span><button class="dep-x" onclick="document.getElementById('depWarn').style.display='none'">✕</button></div>
 <div class="wrap" id="app"></div>
 <div id="verBar" class="ver-bar"></div>
+<div id="wordLib" class="wl-modal" style="display:none"></div>
 <div class="modal" id="modal"><div class="sheet"><h3>选择第几篇</h3>
  <div class="hint">绿色=已打卡 · 蓝框=当前篇</div><div class="grid" id="grid"></div>
  <div style="text-align:right;padding:0 18px 18px"><button class="btn ghost" onclick="closeGrid()">关闭</button></div></div></div>
@@ -372,10 +398,7 @@ function cover(){
      <button class="btn ghost sm" onclick="backupData()">📦 备份</button>
      <button class="btn ghost sm" onclick="document.getElementById('restoreFile').click()">📂 恢复</button>
    </div>
-   <div class="cw-wrap">
-    <button class="cw-toggle" onclick="toggleCoverWords()">📚 我的词库 · <span id="cwCnt">0</span> 词 <span class="cw-caret">▾</span></button>
-    <div id="coverWords" class="cw-cover" style="display:none"></div>
-   </div>
+      <button class="cw-entry" onclick="wordLib()">📚 我的词库 · <span id="cwCnt">0</span> 词 <span class="cw-caret">›</span></button>
    <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="restoreData(this)">
   </div>`;
  renderCalendar();renderWordsCover();
@@ -678,14 +701,53 @@ function toggleDone(){if(state.done[ai])delete state.done[ai];else state.done[ai
  if(modal.classList.contains("show"))openGrid();
  toast(state.done[ai]?"🎉 打卡成功！":"已取消打卡");if(document.getElementById("calWrap"))renderCalendar();}
 function wordFreq(w){var c=0;for(var i=0;i<DATA.length;i++){var v=(DATA[i].vocab)||[];for(var j=0;j<v.length;j++){if((v[j].w||'').toLowerCase()===w){c++;break;}}}return c;}
-function renderWordsCover(){var el=document.getElementById("coverWords");if(!el)return;
- if(!coll.length){el.innerHTML='<div class="cw-empty">还没有收藏词汇，点文章里词汇表的 ⭐ 收藏吧～</div>';return;}
- var h='<div class="cw-list">';
- coll.forEach(function(w){var f=wordFreq(w);h+='<span class="wchip" onclick="openWords()">'+w+(f>1?'<span class="wbadge">'+f+'</span>':'')+'</span>';});
- h+='</div>';el.innerHTML=h;document.getElementById("cwCnt").textContent=coll.length;}
+function renderWordsCover(){var c=document.getElementById("cwCnt");if(c)c.textContent=coll.length;}
 function toggleCoverWords(){var w=document.getElementById("coverWords"),t=document.querySelector(".cw-toggle");if(t)t.classList.toggle("open");if(w)w.style.display=w.style.display==="none"?"block":"none";}
 function showVocabOrig(wk){var a=DATA[ai];if(!a||!a.paras)return;var ex=[];a.paras.forEach(function(p){if((p.en||'').toLowerCase().split(/\W+/).indexOf(wk)>=0)ex.push(p.en);});var box=document.getElementById('vex-'+wk);if(!box)return;box.innerHTML=ex.length?ex.map(function(s){return '<div class="vex-s">'+s+'</div>';}).join(''):'<div class="vex-s muted">本篇原文未出现该词</div>';}
 function locateVocabOrig(wk){var b=document.querySelector('.body');if(b)b.scrollIntoView({behavior:'smooth',block:'start'});}
+function wordLib(){
+ const box=document.getElementById("wordLib");
+ var h='<div class="wl-bar"><button class="btn ghost" onclick="closeLib();cover()">🏠 封面</button><div class="wl-title">📚 我的词库</div><div class="wl-count">'+coll.length+' 词</div></div>';
+ h+='<div class="wl-body">';
+ if(!coll.length){
+  h+='<div class="empty">还没有收藏词汇，点文章里词汇表的 ⭐ 收藏吧～</div>';
+ } else {
+  coll.forEach(function(w){
+   var d=DICT[w]||{};
+   var note=(notes[w]||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+   h+='<div class="wl-item">'
+    +'<div class="wl-top"><span class="wl-word" onclick="showLibOrig(\''+w+'\')">'+w+'</span>'
+    +'<span class="wl-pos">'+(d.pos||'')+'</span>'
+    +'<span class="wl-zh">'+(d.zh||'')+'</span></div>'
+    +'<div class="wl-actions"><button class="vbtn" onclick="showLibOrig(\''+w+'\')">📖 看例句</button>'
+    +'<button class="vbtn" onclick="locateLibOrig(\''+w+'\')">🔗 看原文</button></div>'
+    +'<div class="wl-orig" id="lvex-'+w+'"></div>'
+    +'<textarea class="wl-note" placeholder="复习笔记…" id="note-'+w+'" oninput="saveNote(\''+w+'\')">'+note+'</textarea>'
+    +'</div>';
+  });
+ }
+ h+='</div>';
+ box.innerHTML=h;
+ box.style.display='block';
+}
+function closeLib(){var b=document.getElementById("wordLib");if(b)b.style.display='none';}
+function showLibOrig(w){
+ var ex=[];
+ DATA.forEach(function(a){if(!a||!a.paras)return;(a.paras).forEach(function(p){if((p.en||'').toLowerCase().split(/\W+/).indexOf(w)>=0)ex.push({t:(a.title_cn||a.title||''),s:p.en});});});
+ var box=document.getElementById('lvex-'+w);if(!box)return;
+ if(box.dataset.open==='1'){box.innerHTML='';box.dataset.open='0';return;}
+ box.innerHTML=ex.length?ex.map(function(o){return '<div class="vex-s"><span class="vex-t">'+o.t+'</span>'+o.s+'</div>';}).join(''):'<div class="vex-s muted">全库未检索到该词原文例句</div>';
+ box.dataset.open='1';
+}
+function locateLibOrig(w){
+ var idx=-1;
+ for(var k=0;k<DATA.length;k++){var a=DATA[k];if(!a||!a.paras)continue;var hit=false;(a.paras).forEach(function(p){if((p.en||'').toLowerCase().split(/\W+/).indexOf(w)>=0)hit=true;});if(hit){idx=k;break;}}
+ if(idx<0)return;
+ closeLib();
+ go(idx);
+ setTimeout(function(){var b=document.querySelector('.body');if(b)b.scrollIntoView({behavior:'smooth',block:'start'});},320);
+}
+
 function openWords(){const list=$("#wordsList");list.innerHTML="";
  if(!coll.length){list.innerHTML='<div class="empty">还没有收藏词汇，点词汇表的 ⭐ 收藏吧～</div>';}
  else{coll.forEach(w=>{const d=DICT[w]||{};list.innerHTML+=`<div class="cw"><div class="top">${w} <small>${d.pos||""} ${d.zh||""}</small></div>
@@ -707,6 +769,10 @@ document.addEventListener("keydown",e=>{
  if(e.key==="ArrowRight")go(ai+1);if(e.key==="ArrowLeft")go(ai-1);});
 
 cover();
+
+function showVer(){if(location.protocol==='file:')return;var el=document.getElementById('verBar');if(!el)return;fetch('sw.js',{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){var m=t.match(/hr-read-(v\d+)/);if(!m)return;el.innerHTML='📦 当前版本 <b>'+m[1]+'</b> · 已更新至最新';el.style.display='block';}).catch(function(){});}
+showVer();
+
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
  try{
   navigator.serviceWorker.register('sw.js').then(function(reg){
